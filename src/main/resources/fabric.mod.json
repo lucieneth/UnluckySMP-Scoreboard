@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "unluckyscoreboard",
+	"version": "${version}",
+	"name": "Unlucky Scoreboard",
+	"description": "Server-side stats sidebar for the Unlucky SMP: kills, deaths, blocks mined, playtime and a top-playtime leaderboard, read straight from vanilla statistics.",
+	"authors": [
+		"Lucien",
+		"Claude"
+	],
+	"contact": {
+		"homepage": "https://unlucky.life",
+		"sources": "https://github.com/lucieneth/UnluckySMP-Scoreboard"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/unluckyscoreboard/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"unlucky.scoreboard.UnluckyScoreboard"
+		],
+		"client": [
+			"unlucky.scoreboard.client.UnluckyScoreboardClient"
+		]
+	},
+	"mixins": [
+		"unluckyscoreboard.mixins.json",
+		{
+			"config": "unluckyscoreboard.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25"
+	}
+}
