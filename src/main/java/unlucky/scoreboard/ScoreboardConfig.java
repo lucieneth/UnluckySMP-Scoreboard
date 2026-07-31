@@ -21,11 +21,36 @@ public class ScoreboardConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("unlucky-scoreboard.json");
 
-	// & codes: colors (&7 gray, &d pink, ...), formats (&l bold, &m strikethrough, &o italic, &r reset)
-	// and hex colors (&#ff5ee6). Gradients: <grad:#a855f7:#5ee6ff>text</grad> (2+ stops);
-	// animated gradients: <wave:...>text</wave> — the colors flow through the text.
-	// The vanilla sidebar shows at most 15 lines after %top_playtime% expands.
-	// Placeholders: %player%, %kills%, %deaths%, %mined%, %playtime%, %online%, %max%
+	/** Written into the generated config file; see HEADER for the full placeholder list. */
+	private static final String HEADER = String.join("\n",
+			"  // ─── Unlucky Scoreboard ────────────────────────────────────────────",
+			"  // Placeholders — usable in \"title\" and in any entry of \"lines\":",
+			"  //   %player%        name of the player looking at the sidebar",
+			"  //   %ping%          their latency, in milliseconds",
+			"  //   %kills%         mob kills + player kills",
+			"  //   %deaths%        deaths",
+			"  //   %mined%         every block they have ever mined",
+			"  //   %blocks_mined%  same as %mined%",
+			"  //   %playtime%      total playtime, e.g. \"2d 5h 13m\"",
+			"  //   %online%        players currently online",
+			"  //   %max%           player slots on the server",
+			"  //   %top_playtime%  on a line of its own: expands into the leaderboard",
+			"  //",
+			"  // Placeholders for \"top_playtime_entry\" (one line per leaderboard player):",
+			"  //   %rank%          position, 1 and up",
+			"  //   %name%          player name",
+			"  //   %playtime%      their playtime",
+			"  //",
+			"  // Colors:    &0-&9 &a-&f, or hex &#ff5ee6",
+			"  // Formats:   &l bold  &m strikethrough  &n underline  &o italic  &r reset",
+			"  // Gradient:  <grad:#a855f7:#5ee6ff>text</grad>        (2 or more stops)",
+			"  // Animated:  <wave:#ff5ee6:#a855f7:#5ee6ff>text</wave>  (colors flow along)",
+			"  //",
+			"  // The sidebar shows at most 15 lines once %top_playtime% has expanded.",
+			"  // Apply changes in game with /sidebar reload — check them with /sidebar preview.",
+			"  // ───────────────────────────────────────────────────────────────────",
+			"");
+
 	public String title = "&l<wave:#ff5ee6:#a855f7:#5ee6ff:#a855f7>ᴜɴʟᴜᴄᴋʏꜱᴍᴘ</wave>";
 	public List<String> lines = List.of(
 			"&8&m---------------------",
@@ -68,7 +93,12 @@ public class ScoreboardConfig {
 
 	public void save() {
 		try {
-			Files.writeString(PATH, GSON.toJson(this));
+			// Gson reads leniently, so the // reference block survives reloads.
+			String json = GSON.toJson(this);
+			int brace = json.indexOf('{');
+			String withHeader = brace < 0 ? json
+					: json.substring(0, brace + 1) + "\n" + HEADER + json.substring(brace + 1);
+			Files.writeString(PATH, withHeader);
 		} catch (IOException e) {
 			UnluckyScoreboard.LOGGER.error("Failed to write {}", PATH, e);
 		}

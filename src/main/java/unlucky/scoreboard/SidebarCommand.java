@@ -52,7 +52,8 @@ public final class SidebarCommand {
 		String name = player != null ? player.getScoreboardName() : "Player";
 		StatsManager.PlayerStats stats = player != null ? StatsManager.get(player.getUUID()) : StatsManager.PlayerStats.ZERO;
 		int topCount = Math.max(1, Math.min(10, config.top_playtime_count));
-		List<String> lines = SidebarUpdater.renderLines(config, name, stats,
+		String ping = String.valueOf(player != null ? player.connection.latency() : 0);
+		List<String> lines = SidebarUpdater.renderLines(config, name, ping, stats,
 				StatsManager.topPlaytime(topCount),
 				String.valueOf(server.getPlayerCount()),
 				String.valueOf(server.getPlayerList().getMaxPlayers()));

@@ -83,7 +83,8 @@ public final class SidebarUpdater {
 		STATES.keySet().retainAll(onlineIds);
 
 		for (ServerPlayer player : players) {
-			List<String> lines = renderLines(config, player.getScoreboardName(), StatsManager.get(player.getUUID()), top, online, max);
+			List<String> lines = renderLines(config, player.getScoreboardName(), String.valueOf(player.connection.latency()),
+					StatsManager.get(player.getUUID()), top, online, max);
 			BoardState state = STATES.get(player.getUUID());
 			boolean current = state != null && state.connection() == player.connection && state.generation() == generation;
 			if (current) {
@@ -120,7 +121,7 @@ public final class SidebarUpdater {
 		}
 	}
 
-	static List<String> renderLines(ScoreboardConfig config, String playerName, StatsManager.PlayerStats stats,
+	static List<String> renderLines(ScoreboardConfig config, String playerName, String ping, StatsManager.PlayerStats stats,
 			List<StatsManager.TopEntry> top, String online, String max) {
 		List<String> out = new ArrayList<>();
 		for (String template : config.lines) {
@@ -136,9 +137,11 @@ public final class SidebarUpdater {
 			}
 			out.add(template
 					.replace("%player%", playerName)
+					.replace("%ping%", ping)
 					.replace("%kills%", formatCount(stats.kills()))
 					.replace("%deaths%", formatCount(stats.deaths()))
 					.replace("%mined%", formatCount(stats.mined()))
+					.replace("%blocks_mined%", formatCount(stats.mined()))
 					.replace("%playtime%", formatPlaytime(stats.playtimeTicks()))
 					.replace("%online%", online)
 					.replace("%max%", max));

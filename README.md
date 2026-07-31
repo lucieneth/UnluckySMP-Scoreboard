@@ -16,12 +16,15 @@ Vanilla clients see it — nothing to install client-side.
 
 ## Config
 
-`config/unlucky-scoreboard.json` (created on first run):
+`config/unlucky-scoreboard.json` (created on first run). The generated file
+starts with a `//` comment block listing every placeholder and formatting code,
+so the reference is always at hand — comments are preserved across reloads.
 
 - `title` — sidebar title.
 - `lines` — the sidebar, one string per line. `%top_playtime%` on its own line
-  expands into the leaderboard. Placeholders: `%player%`, `%kills%`, `%deaths%`,
-  `%mined%`, `%playtime%`, `%online%`, `%max%`.
+  expands into the leaderboard. Placeholders: `%player%`, `%ping%`, `%kills%`,
+  `%deaths%`, `%mined%` (alias `%blocks_mined%`), `%playtime%`, `%online%`,
+  `%max%`.
 - `top_playtime_entry` — template for each leaderboard row (`%rank%`, `%name%`,
   `%playtime%`).
 - `top_playtime_count` — leaderboard size, 1–10.
