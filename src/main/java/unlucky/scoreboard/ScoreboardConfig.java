@@ -30,7 +30,7 @@ public class ScoreboardConfig {
 			"  //   %kills%         mob kills + player kills",
 			"  //   %deaths%        deaths",
 			"  //   %mined%         every block they have ever mined",
-			"  //   %blocks_mined%  same as %mined%",
+			"  //   %placed%        every block they have ever placed",
 			"  //   %playtime%      total playtime, e.g. \"2d 5h 13m\"",
 			"  //   %online%        players currently online",
 			"  //   %max%           player slots on the server",

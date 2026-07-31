@@ -14,6 +14,8 @@ import net.minecraft.stats.ServerStatsCounter;
 import net.minecraft.stats.Stat;
 import net.minecraft.stats.Stats;
 import net.minecraft.stats.StatsCounter;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -33,8 +35,8 @@ import java.util.UUID;
  * The mod tracks nothing itself — vanilla already records every statistic.
  */
 public final class StatsManager {
-	public record PlayerStats(long kills, long deaths, long mined, long playtimeTicks) {
-		public static final PlayerStats ZERO = new PlayerStats(0, 0, 0, 0);
+	public record PlayerStats(long kills, long deaths, long mined, long placed, long playtimeTicks) {
+		public static final PlayerStats ZERO = new PlayerStats(0, 0, 0, 0, 0);
 	}
 
 	public record TopEntry(String name, long playtimeTicks) {
@@ -142,10 +144,19 @@ public final class StatsManager {
 		for (Stat<Block> stat : Stats.BLOCK_MINED) {
 			mined += counter.getValue(stat);
 		}
+		// Vanilla has no "blocks placed" stat: placing a block counts as using its
+		// item, so sum item-use counts over block items only.
+		long placed = 0;
+		for (Stat<Item> stat : Stats.ITEM_USED) {
+			if (stat.getValue() instanceof BlockItem) {
+				placed += counter.getValue(stat);
+			}
+		}
 		return new PlayerStats(
 				counter.getValue(Stats.CUSTOM, Stats.MOB_KILLS) + counter.getValue(Stats.CUSTOM, Stats.PLAYER_KILLS),
 				counter.getValue(Stats.CUSTOM, Stats.DEATHS),
 				mined,
+				placed,
 				counter.getValue(Stats.CUSTOM, Stats.PLAY_TIME));
 	}
 

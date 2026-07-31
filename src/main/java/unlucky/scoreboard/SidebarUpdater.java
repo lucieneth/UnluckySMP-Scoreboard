@@ -141,7 +141,7 @@ public final class SidebarUpdater {
 					.replace("%kills%", formatCount(stats.kills()))
 					.replace("%deaths%", formatCount(stats.deaths()))
 					.replace("%mined%", formatCount(stats.mined()))
-					.replace("%blocks_mined%", formatCount(stats.mined()))
+					.replace("%placed%", formatCount(stats.placed()))
 					.replace("%playtime%", formatPlaytime(stats.playtimeTicks()))
 					.replace("%online%", online)
 					.replace("%max%", max));

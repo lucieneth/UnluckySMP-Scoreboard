@@ -23,8 +23,9 @@ so the reference is always at hand — comments are preserved across reloads.
 - `title` — sidebar title.
 - `lines` — the sidebar, one string per line. `%top_playtime%` on its own line
   expands into the leaderboard. Placeholders: `%player%`, `%ping%`, `%kills%`,
-  `%deaths%`, `%mined%` (alias `%blocks_mined%`), `%playtime%`, `%online%`,
-  `%max%`.
+  `%deaths%`, `%mined%`, `%placed%`, `%playtime%`, `%online%`, `%max%`.
+  (Vanilla has no blocks-placed statistic, so `%placed%` sums how often the
+  player used a block item — which is what placing a block records.)
 - `top_playtime_entry` — template for each leaderboard row (`%rank%`, `%name%`,
   `%playtime%`).
 - `top_playtime_count` — leaderboard size, 1–10.
