@@ -1,0 +1,40 @@
+# Tag-driven releases: push a version tag like 26.2 and this builds the jar
+# and publishes a GitHub Release with it attached.
+#
+#   git tag 26.2
+#   git push origin 26.2
+
+name: release
+on:
+  push:
+    tags: ['[0-9]*']
+
+permissions:
+  contents: write # create the release + upload the jar
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: build
+        run: ./gradlew build
+      - name: create github release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JAR=$(find build/libs -maxdepth 1 -name "*.jar" ! -name "*-sources.jar")
+          gh release create "$GITHUB_REF_NAME" \
+            "$JAR" \
+            --title "Unlucky Scoreboard $GITHUB_REF_NAME" \
+            --generate-notes
