@@ -59,6 +59,14 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
+base {
+	archivesName = "UnluckySMP-Scoreboard ${project.minecraft_version}"
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+	archiveVersion = ''
+}
+
 jar {
 	def projectName = project.name
 	inputs.property "projectName", projectName
