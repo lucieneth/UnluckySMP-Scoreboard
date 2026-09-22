@@ -11,12 +11,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.ServerStatsCounter;
-import net.minecraft.stats.Stat;
-import net.minecraft.stats.Stats;
 import net.minecraft.stats.StatsCounter;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.IOException;
@@ -35,11 +30,16 @@ import java.util.UUID;
  * The mod tracks nothing itself — vanilla already records every statistic.
  */
 public final class StatsManager {
-	public record PlayerStats(long kills, long deaths, long mined, long placed, long playtimeTicks) {
-		public static final PlayerStats ZERO = new PlayerStats(0, 0, 0, 0, 0);
+	/** One value per {@link StatBoard}, indexed by ordinal. */
+	public record PlayerStats(long[] values) {
+		public static final PlayerStats ZERO = new PlayerStats(new long[StatBoard.values().length]);
+
+		public long get(StatBoard board) {
+			return values[board.ordinal()];
+		}
 	}
 
-	public record TopEntry(String name, long playtimeTicks) {
+	public record TopEntry(String name, long value) {
 	}
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -132,32 +132,29 @@ public final class StatsManager {
 	}
 
 	public static List<TopEntry> topPlaytime(int count) {
+		return top(StatBoard.PLAYTIME, count);
+	}
+
+	/**
+	 * The highest-ranked players on one board. Players sitting at zero are left
+	 * out — a leaderboard of nobodies-yet says nothing.
+	 */
+	public static List<TopEntry> top(StatBoard board, int count) {
 		return STATS.entrySet().stream()
-				.sorted(Comparator.comparingLong((Map.Entry<UUID, PlayerStats> e) -> e.getValue().playtimeTicks()).reversed())
+				.filter(e -> e.getValue().get(board) > 0)
+				.sorted(Comparator.comparingLong((Map.Entry<UUID, PlayerStats> e) -> e.getValue().get(board)).reversed())
 				.limit(count)
-				.map(e -> new TopEntry(NAMES.getOrDefault(e.getKey(), e.getKey().toString().substring(0, 8)), e.getValue().playtimeTicks()))
+				.map(e -> new TopEntry(NAMES.getOrDefault(e.getKey(), e.getKey().toString().substring(0, 8)), e.getValue().get(board)))
 				.toList();
 	}
 
 	private static PlayerStats aggregate(StatsCounter counter) {
-		long mined = 0;
-		for (Stat<Block> stat : Stats.BLOCK_MINED) {
-			mined += counter.getValue(stat);
+		StatBoard[] boards = StatBoard.values();
+		long[] values = new long[boards.length];
+		for (StatBoard board : boards) {
+			values[board.ordinal()] = board.read(counter);
 		}
-		// Vanilla has no "blocks placed" stat: placing a block counts as using its
-		// item, so sum item-use counts over block items only.
-		long placed = 0;
-		for (Stat<Item> stat : Stats.ITEM_USED) {
-			if (stat.getValue() instanceof BlockItem) {
-				placed += counter.getValue(stat);
-			}
-		}
-		return new PlayerStats(
-				counter.getValue(Stats.CUSTOM, Stats.MOB_KILLS) + counter.getValue(Stats.CUSTOM, Stats.PLAYER_KILLS),
-				counter.getValue(Stats.CUSTOM, Stats.DEATHS),
-				mined,
-				placed,
-				counter.getValue(Stats.CUSTOM, Stats.PLAY_TIME));
+		return new PlayerStats(values);
 	}
 
 	private static void loadNamesFile() {

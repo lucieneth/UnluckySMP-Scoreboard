@@ -1,10 +1,12 @@
 package unlucky.scoreboard;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
@@ -30,7 +32,24 @@ public final class SidebarCommand {
 						}))
 				.then(Commands.literal("top")
 						.executes(ctx -> {
-							ctx.getSource().sendSuccess(SidebarCommand::topPlaytime, false);
+							ctx.getSource().sendSuccess(() -> top(StatBoard.PLAYTIME), false);
+							return 1;
+						})
+						.then(Commands.argument("board", StringArgumentType.word())
+								.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(StatBoard.ids(), builder))
+								.executes(ctx -> {
+									String id = StringArgumentType.getString(ctx, "board");
+									StatBoard board = StatBoard.byId(id);
+									if (board == null) {
+										ctx.getSource().sendFailure(Component.literal("Unknown board \"" + id + "\". Try /sidebar boards."));
+										return 0;
+									}
+									ctx.getSource().sendSuccess(() -> top(board), false);
+									return 1;
+								})))
+				.then(Commands.literal("boards")
+						.executes(ctx -> {
+							ctx.getSource().sendSuccess(SidebarCommand::boards, false);
 							return 1;
 						}))
 				.then(Commands.literal("reload")
@@ -53,26 +72,43 @@ public final class SidebarCommand {
 		StatsManager.PlayerStats stats = player != null ? StatsManager.get(player.getUUID()) : StatsManager.PlayerStats.ZERO;
 		int topCount = Math.max(1, Math.min(10, config.top_playtime_count));
 		String ping = String.valueOf(player != null ? player.connection.latency() : 0);
-		List<String> lines = SidebarUpdater.renderLines(config, name, ping, stats,
+		SidebarUpdater.Rendered rendered = SidebarUpdater.renderLines(config, name, ping, stats,
 				StatsManager.topPlaytime(topCount),
 				String.valueOf(server.getPlayerCount()),
 				String.valueOf(server.getPlayerList().getMaxPlayers()));
-		MutableComponent out = Component.empty().append(ScoreboardConfig.parseLine(config.title));
-		for (String line : lines) {
-			out.append(Component.literal("\n")).append(ScoreboardConfig.parseLine(line));
+		// Whole lines, never mid-typewriter — the point is to check the config —
+		// but at the live animation phase so waves and caps look like they do in game.
+		float ph = SidebarUpdater.livePhase(server, config);
+		MutableComponent out = Component.empty().append(ScoreboardConfig.parseLine(config.title, ph));
+		for (String line : rendered.lines()) {
+			out.append(Component.literal("\n")).append(ScoreboardConfig.parseLine(line, ph));
 		}
 		return out;
 	}
 
-	private static Component topPlaytime() {
-		MutableComponent out = Component.literal("Top playtime").withStyle(ChatFormatting.GOLD);
+	private static Component top(StatBoard board) {
+		MutableComponent out = Component.literal("Top " + board.label()).withStyle(ChatFormatting.GOLD);
+		List<StatsManager.TopEntry> entries = StatsManager.top(board, 10);
+		if (entries.isEmpty()) {
+			return out.append(Component.literal("\nNobody has any yet.").withStyle(ChatFormatting.GRAY));
+		}
 		int rank = 1;
-		for (StatsManager.TopEntry entry : StatsManager.topPlaytime(10)) {
+		for (StatsManager.TopEntry entry : entries) {
 			out.append(Component.literal("\n#" + rank++ + " ").withStyle(ChatFormatting.YELLOW))
 					.append(Component.literal(entry.name()).withStyle(ChatFormatting.WHITE))
-					.append(Component.literal(" " + SidebarUpdater.formatPlaytime(entry.playtimeTicks())).withStyle(ChatFormatting.GRAY));
+					.append(Component.literal(" " + board.format(entry.value())).withStyle(ChatFormatting.GRAY));
 		}
 		return out;
+	}
+
+	private static Component boards() {
+		return Component.literal("Leaderboard boards").withStyle(ChatFormatting.GOLD)
+				.append(Component.literal("\n" + String.join(", ", StatBoard.ids())).withStyle(ChatFormatting.WHITE))
+				.append(Component.literal("\nList the ones you want in ").withStyle(ChatFormatting.GRAY))
+				.append(Component.literal("leaderboard_boards").withStyle(ChatFormatting.YELLOW))
+				.append(Component.literal(", then ").withStyle(ChatFormatting.GRAY))
+				.append(Component.literal("/sidebar reload").withStyle(ChatFormatting.YELLOW))
+				.append(Component.literal(".").withStyle(ChatFormatting.GRAY));
 	}
 
 	private static Component info() {
